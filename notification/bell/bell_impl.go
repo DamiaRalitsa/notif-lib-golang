@@ -22,7 +22,6 @@ type gateway struct {
 	Username string
 	Password string
 	Database string
-	// HttpClient *helpers.ToolsAPI
 }
 
 func NewNotifBellHandler() NotifBellClient {
@@ -110,14 +109,12 @@ func (g *gateway) SendBellBroadcast(db *sql.DB, userIdentifiers []UserIdentifier
 
 	stmt, err := db.Prepare(fullQuery)
 	if err != nil {
-		log.Printf("Error preparing statement: %v", err)
 		return errors.New("failed to prepare statement")
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(values...)
 	if err != nil {
-		log.Printf("Error broadcasting notifications: %v", err)
 		return errors.New("failed to send broadcast notifications")
 	}
 
