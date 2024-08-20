@@ -27,19 +27,7 @@ func main() {
 
     // Initialize the Mailer handler
     mailerHandler := mailer.NewMailerHandler()
-
-    // Example usage
-    to := []string{"recipient@example.com"}
-    subject := "Test Subject"
-    message := "This is a test email."
-    filePaths := []string{"path/to/attachment1", "path/to/attachment2"}
-
-    response, err := mailerHandler.SendEmailWithAttachments(context.Background(), to, subject, message, filePaths)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    log.Println("Response:", response)
+    
 }
 ```
 

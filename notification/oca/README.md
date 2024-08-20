@@ -28,24 +28,6 @@ func main() {
     // Initialize the OCA handler
     ocaHandler := oca.NewOCAHandler()
 
-    // Example usage
-    body := oca.OCA{
-        PhoneNumber: []string{"081234567890"},
-        MessageData: oca.MessageData{
-            Message: oca.Message{
-                Template: oca.Template{
-                    TemplateCodeID: os.Getenv("OCA_WA_TEMPLATE_CODE"),
-                },
-            },
-        },
-    }
-
-    response, err := ocaHandler.SendWhatsapp(context.Background(), body)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    log.Println("Response:", response)
 }
 ```
 

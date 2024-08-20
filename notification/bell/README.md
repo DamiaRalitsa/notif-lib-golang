@@ -37,25 +37,6 @@ func main() {
     }
     defer db.Close()
 
-    payload := bell.NotificationPayload{
-        UserID:  "123",
-        Type:    "info",
-        Name:    "John Doe",
-        Email:   "john.doe@example.com",
-        Phone:   "1234567890",
-        Icon:    "icon.png",
-        Path:    "/path/to/resource",
-        Content: map[string]interface{}{"message": "Hello, World!"},
-        Color:   "primary",
-    }
-
-    err = notifHandler.SendBell(db, payload)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    log.Println("Notification sent successfully!")
-}
 ```
 
 ## Sending Notifications
