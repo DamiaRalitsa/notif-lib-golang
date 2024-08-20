@@ -5,7 +5,7 @@
 First, install the library using `go get`:
 
 ```sh
-go get github.com/DamiaRalitsa/notif-lib-go
+go get github.com/DamiaRalitsa/notif-lib-go/bell@latest
 go get github.com/lib/pq
 ```
 
@@ -26,17 +26,9 @@ import (
 )
 
 func main() {
-    config := bell.NotifBellConfig{
-        Type:     "postgres",
-        Host:     os.Getenv("DB_HOST"),
-		Port:     5432,
-        Username: os.Getenv("DB_USERNAME"),
-        Password: os.Getenv("DB_PASSWORD"),
-        Database: os.Getenv("DB_DATABASE"),
-    }
 
     // Initialize the notification handler
-    notifHandler := bell.NewNotifBellHandler(config)
+    notifHandler := bell.NewNotifBellHandler()
 
     // Example usage
     db, err := sql.Open("postgres", "user=username password=password dbname=database sslmode=disable")

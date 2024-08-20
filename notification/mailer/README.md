@@ -5,7 +5,7 @@
 First, install the library using `go get`:
 
 ```sh
-go get github.com/DamiaRalitsa/notif-lib-go
+go get github.com/DamiaRalitsa/notif-lib-go/mailer@latest
 ```
 
 ## Configuration
@@ -24,16 +24,9 @@ import (
 )
 
 func main() {
-    config := mailer.MailerConfig{
-        FabdCoreUrl:   os.Getenv("FABD_CORE_URL"),
-        EmailHost:     os.Getenv("EMAIL_HOST"),
-        EmailPort:     os.Getenv("EMAIL_PORT"),
-        EmailUserName: os.Getenv("EMAIL_USERNAME"),
-        EmailPassword: os.Getenv("EMAIL_PASSWORD"),
-    }
 
     // Initialize the Mailer handler
-    mailerHandler := mailer.NewMailerHandler(config)
+    mailerHandler := mailer.NewMailerHandler()
 
     // Example usage
     to := []string{"recipient@example.com"}
@@ -54,15 +47,20 @@ func main() {
 
 Send Emails
 
-To send a notification, use the SendEmailWIthAttachments method
+To send a notification, use the SendEmail method
 
 ```sh
 to := []string{"recipient1@example.com", "recipient2@example.com"}
 subject := "Test Subject"
 message := "This is a test email with attachments."
-filePaths := []string{"path/to/attachment1", "path/to/attachment2"}
 
-response, err := mailerHandler.SendEmailWithAttachments(context.Background(), to, subject, message, filePaths)
+ mail := mailer.Mail{
+  	To:      emailRecipients,
+  	Subject: emailSubject,
+  	Message: emailMessage,
+  }
+
+response, err := mailerHandler.SendEmail(context.Background(), mail)
 if err != nil {
     log.Fatal(err)
 }

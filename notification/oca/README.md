@@ -20,17 +20,13 @@ import (
     "log"
     "os"
 
-    "github.com/DamiaRalitsa/notif-lib-go/oca"
+    "github.com/DamiaRalitsa/notif-lib-go/oca@latest"
 )
 
 func main() {
-    config := oca.OCAConfig{
-        OCAWABASEURL: os.Getenv("OCA_WA_BASE_URL"),
-        OCAWAToken:   os.Getenv("OCA_WA_TOKEN"),
-    }
 
     // Initialize the OCA handler
-    ocaHandler := oca.NewOCAHandler(config)
+    ocaHandler := oca.NewOCAHandler()
 
     // Example usage
     body := oca.OCA{
