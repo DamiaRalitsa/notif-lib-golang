@@ -5,7 +5,7 @@
 First, install the library using `go get`:
 
 ```sh
-go get github.com/DamiaRalitsa/notif-agent-go
+go get github.com/DamiaRalitsa/notif-lib-go
 ```
 
 ## Configuration
@@ -20,7 +20,7 @@ import (
     "log"
     "os"
 
-    "github.com/DamiaRalitsa/notif-agent-go/oca"
+    "github.com/DamiaRalitsa/notif-lib-go/oca"
 )
 
 func main() {

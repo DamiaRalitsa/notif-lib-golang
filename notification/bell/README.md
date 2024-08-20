@@ -5,7 +5,7 @@
 First, install the library using `go get`:
 
 ```sh
-go get github.com/DamiaRalitsa/notif-agent-go
+go get github.com/DamiaRalitsa/notif-lib-go
 go get github.com/lib/pq
 ```
 
@@ -22,7 +22,7 @@ import (
     "os"
 
     _ "github.com/lib/pq"
-    "github.com/DamiaRalitsa/notif-agent-go/bell"
+    "github.com/DamiaRalitsa/notif-lib-go/bell"
 )
 
 func main() {

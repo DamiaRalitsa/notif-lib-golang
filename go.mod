@@ -1,4 +1,4 @@
-module github.com/DamiaRalitsa/notif-agent-golang
+module github.com/DamiaRalitsa/notif-lib-golang
 
 go 1.22.6
 

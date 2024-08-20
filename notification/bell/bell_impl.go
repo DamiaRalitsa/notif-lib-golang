@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/DamiaRalitsa/notif-agent-golang/notification/config"
+	"github.com/DamiaRalitsa/notif-lib-golang/notification/config"
 )
 
 type BellHandler struct {

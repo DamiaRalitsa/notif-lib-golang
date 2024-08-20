@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/DamiaRalitsa/notif-agent-golang/notification/config"
+	"github.com/DamiaRalitsa/notif-lib-golang/notification/config"
 )
 
 type OCAHandler struct {
