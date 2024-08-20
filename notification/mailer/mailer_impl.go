@@ -5,10 +5,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"mime"
 	"net/smtp"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/DamiaRalitsa/notif-lib-golang/notification/config"
 )
@@ -23,10 +25,8 @@ type gateway struct {
 	Port     string
 	Username string
 	Password string
-	// HttpClient *helpers.ToolsAPI
 }
 
-// NewMailerHandler creates a new MailerHandler instance.
 func NewMailerHandler() SmtpClient {
 	config := &config.NotifConfig{}
 	config.InitEnv()
@@ -36,34 +36,23 @@ func NewMailerHandler() SmtpClient {
 		Port:     config.EmailPort,
 		Username: config.EmailUserName,
 		Password: config.EmailPassword,
-		// HttpClient: helpers.NewToolsAPI(payloadEmail.FabdCoreUrl),
 	}
 	return g
 }
 
 func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachments MailWithoutAttachments, filePaths []string) (data interface{}, err error) {
+	start := time.Now()
 	attachments := make([]Attachments, 0)
 
 	for _, filePath := range filePaths {
-		// cwd, err := os.Getwd()
-		// if err != nil {
-		// 	log.Fatalf("unable to get current directory: %v", err)
-		// }
-
-		// templatePath := filepath.Join(cwd, "assets", "templates", filePath)
-		// log.Printf("templatePath: %v", templatePath)
-
-		// Read the file content
 		fileContent, err := ioutil.ReadFile(filePath)
 		if err != nil {
 			return nil, err
 		}
 
-		// Determine the file's content type
 		fileName := filepath.Base(filePath)
 		contentType := mime.TypeByExtension(filepath.Ext(fileName))
 
-		// Map the file content and metadata into the model.Attachments struct
 		attachment := Attachments{
 			FileName:    fileName,
 			Content:     fileContent,
@@ -74,7 +63,6 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 		attachments = append(attachments, attachment)
 	}
 
-	// Create the Mail struct
 	mail := Mail{
 		To:          mailWithoutAttachments.To,
 		Subject:     mailWithoutAttachments.Subject,
@@ -82,11 +70,15 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 		Attachments: attachments,
 	}
 
-	// Call the existing SendEmail method with the Mail struct
-	return g.SendEmail(ctx, mail)
+	return g.SendEmail(ctx, mail, start)
 }
 
-func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, err error) {
+func (g *gateway) SendEmail(ctx context.Context, mail Mail, timer time.Time) (data interface{}, err error) {
+
+	if timer == (time.Time{}) {
+		timer = time.Now()
+	}
+
 	from := g.Username
 	password := g.Password
 	smtpHost := g.Host
@@ -132,22 +124,17 @@ func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, e
 		return "Failed", err
 	}
 
+	log.Printf("sendBell took %v", time.Since(timer))
+
 	fmt.Println("Email Sent Successfully!")
 	return "OKAY", nil
 }
 
 func (g *gateway) NewSmtpClient() SmtpClient {
-	// baseUrl := os.Getenv("FABD_API_CORE_URL")
-	// host := os.Getenv("EMAIL_HOST")
-	// port := os.Getenv("EMAIL_PORT")
-	// username := os.Getenv("EMAIL_USERNAME")
-	// password := os.Getenv("EMAIL_PASSWORD")
-	// httpClient := &helpers.ToolsAPI{}
 	return &gateway{
-		BaseURL: g.BaseURL,
-		Host:    g.Host,
-		Port:    g.Port,
-		// HttpClient: httpClient,
+		BaseURL:  g.BaseURL,
+		Host:     g.Host,
+		Port:     g.Port,
 		Username: g.Username,
 		Password: g.Password,
 	}
