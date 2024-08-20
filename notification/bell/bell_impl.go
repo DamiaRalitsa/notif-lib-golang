@@ -22,10 +22,8 @@ type gateway struct {
 	Username string
 	Password string
 	Database string
-	// HttpClient *helpers.ToolsAPI
 }
 
-// NewNotifBellHandler creates a new NotifBellHandler instance.
 func NewNotifBellHandler() NotifBellClient {
 	config := &config.NotifConfig{}
 	config.InitEnv()
@@ -41,26 +39,30 @@ func NewNotifBellHandler() NotifBellClient {
 }
 
 func (g *gateway) SendBell(db *sql.DB, payload NotificationPayload) error {
-	// Simple input validation
+
 	if payload.UserID == "" || payload.Type == "" || payload.Name == "" || payload.Email == "" || payload.Icon == "" || payload.Path == "" || payload.Content == nil {
 		return errors.New("missing required fields in the payload")
 	}
 
-	// Start timing the operation
 	start := time.Now()
 
 	insertQuery := `
-        INSERT INTO dev_fabd_user_core_owner.notifications (
-            user_id, "type", "name", email, phone, icon, "path", "content", color
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `
+    INSERT INTO notifications (
+        user_id, "type", "name", email, phone, icon, "path", "content", color
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+`
+	stmt, err := db.Prepare(insertQuery)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %v", err)
+	}
+	defer stmt.Close()
 
 	content, err := json.Marshal(payload.Content)
 	if err != nil {
 		return fmt.Errorf("failed to marshal content: %v", err)
 	}
 
-	values := []interface{}{
+	_, err = stmt.Exec(
 		payload.UserID,
 		payload.Type,
 		payload.Name,
@@ -70,36 +72,28 @@ func (g *gateway) SendBell(db *sql.DB, payload NotificationPayload) error {
 		payload.Path,
 		content,
 		payload.Color,
-	}
-
-	_, err = db.Exec(insertQuery, values...)
+	)
 	if err != nil {
-		log.Printf("Error inserting notification: %v", err)
-		return errors.New("failed to send notification")
+		return fmt.Errorf("failed to execute statement: %v", err)
 	}
 
-	// End timing and log the duration
 	log.Printf("sendBell took %v", time.Since(start))
 	return nil
 }
 
 func (g *gateway) SendBellBroadcast(db *sql.DB, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
-	// Validate that the userIdentifiers array is not empty
+
 	if len(userIdentifiers) == 0 {
 		return errors.New("user identifiers array is empty")
 	}
-
-	// Start timing the operation
 	start := time.Now()
 
-	// Prepare the base insert query
 	insertQuery := `
-        INSERT INTO dev_fabd_user_core_owner.notifications (
+        INSERT INTO notifications (
             user_id, "type", "name", email, phone, icon, "path", "content", color
         ) VALUES
     `
 
-	// Construct the values part of the query
 	valueRows := ""
 	values := []interface{}{}
 	for i, user := range userIdentifiers {
@@ -113,13 +107,18 @@ func (g *gateway) SendBellBroadcast(db *sql.DB, userIdentifiers []UserIdentifier
 
 	fullQuery := insertQuery + valueRows
 
-	_, err := db.Exec(fullQuery, values...)
+	stmt, err := db.Prepare(fullQuery)
 	if err != nil {
-		log.Printf("Error broadcasting notifications: %v", err)
+		return errors.New("failed to prepare statement")
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(values...)
+	if err != nil {
 		return errors.New("failed to send broadcast notifications")
 	}
 
-	// End timing and log the duration
 	log.Printf("sendBellBroadcast took %v", time.Since(start))
+
 	return nil
 }
