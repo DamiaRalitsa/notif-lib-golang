@@ -1,23 +1,21 @@
 package bell
 
 import (
-	"database/sql"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"time"
 
 	cfg "github.com/DamiaRalitsa/notif-lib-golang/notification/config"
 )
 
 type gateway struct {
-	Type     string
-	Host     string
-	Port     string
-	Username string
-	Password string
-	Database string
+	FabdCoreUrl string
+	ApiKey      string
 }
 
 func NewNotifBellHandler() (NotifBellClient, error) {
@@ -27,17 +25,13 @@ func NewNotifBellHandler() (NotifBellClient, error) {
 		return nil, err
 	}
 	g := &gateway{
-		Type:     config.BellType,
-		Host:     config.BellHost,
-		Port:     config.BellPort,
-		Username: config.BellUsername,
-		Password: config.BellPassword,
-		Database: config.BellDatabase,
+		FabdCoreUrl: config.FabdCoreUrl,
+		ApiKey:      config.BellApiKey,
 	}
 	return g, err
 }
 
-func (g *gateway) SendBell(db *sql.DB, payload NotificationPayload) error {
+func (g *gateway) SendBell(payload NotificationPayload) error {
 
 	// TODO : Go validator
 	if payload.UserID == "" || payload.Type == "" || payload.Name == "" || payload.Email == "" || payload.Icon == "" || payload.Path == "" || payload.Content == nil {
@@ -46,79 +40,64 @@ func (g *gateway) SendBell(db *sql.DB, payload NotificationPayload) error {
 
 	start := time.Now()
 
-	insertQuery := `
-    INSERT INTO notifications (
-        user_id, "type", "name", email, phone, icon, "path", "content", color
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-`
-	stmt, err := db.Prepare(insertQuery)
+	err := g.pushNotif(payload)
 	if err != nil {
-		return fmt.Errorf("failed to prepare statement: %v", err)
-	}
-	defer stmt.Close()
-
-	content, err := json.Marshal(payload.Content)
-	if err != nil {
-		return fmt.Errorf("failed to marshal content: %v", err)
-	}
-
-	_, err = stmt.Exec(
-		payload.UserID,
-		payload.Type,
-		payload.Name,
-		payload.Email,
-		payload.Phone,
-		payload.Icon,
-		payload.Path,
-		content,
-		payload.Color,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to execute statement: %v", err)
+		return fmt.Errorf("failed to send bell notifications: %v", err)
 	}
 
 	log.Printf("sendBell took %v", time.Since(start))
 	return nil
 }
 
-func (g *gateway) SendBellBroadcast(db *sql.DB, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
-
+func (g *gateway) SendBellBroadcast(userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
 	if len(userIdentifiers) == 0 {
 		return errors.New("user identifiers array is empty")
 	}
 	start := time.Now()
 
-	insertQuery := `
-        INSERT INTO notifications (
-            user_id, "type", "name", email, phone, icon, "path", "content", color
-        ) VALUES
-    `
-
-	valueRows := ""
-	values := []interface{}{}
-	for i, user := range userIdentifiers {
-		if i > 0 {
-			valueRows += ", "
+	for _, user := range userIdentifiers {
+		notificationPayload := NotificationPayload{
+			UserID:  user.UserID,
+			Type:    payload.Type,
+			Name:    user.Name,
+			Email:   user.Email,
+			Phone:   user.Phone,
+			Icon:    payload.Icon,
+			Path:    payload.Path,
+			Content: payload.Content,
+			Color:   payload.Color,
 		}
-		baseIndex := i * 9
-		valueRows += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", baseIndex+1, baseIndex+2, baseIndex+3, baseIndex+4, baseIndex+5, baseIndex+6, baseIndex+7, baseIndex+8, baseIndex+9)
-		values = append(values, user.UserID, payload.Type, user.Name, user.Email, user.Phone, payload.Icon, payload.Path, payload.Content, payload.Color)
-	}
 
-	fullQuery := insertQuery + valueRows
-
-	stmt, err := db.Prepare(fullQuery)
-	if err != nil {
-		return errors.New("failed to prepare statement")
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(values...)
-	if err != nil {
-		return errors.New("failed to send broadcast notifications")
+		err := g.pushNotif(notificationPayload)
+		if err != nil {
+			log.Printf("Error sending notification to user %s: %v", user.UserID, err)
+			return errors.New("failed to send broadcast notifications")
+		}
 	}
 
 	log.Printf("sendBellBroadcast took %v", time.Since(start))
+	return nil
+}
 
+func (g *gateway) pushNotif(payload NotificationPayload) error {
+	url := g.FabdCoreUrl + "/v4/notifications"
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", g.ApiKey)
+	req.Header.Set("Content-Type", "application/json")
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(jsonData))
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	log.Println("Response from external endpoint:", resp.Status)
 	return nil
 }

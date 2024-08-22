@@ -13,13 +13,8 @@ type OCAConfig struct {
 }
 
 type BellConfig struct {
-	FabdCoreUrl  string `env:"FABD_CORE_URL" envDefault:"" json:"notif_fabd_core_url" validate:"required"`
-	BellType     string `env:"BELL_TYPE" envDefault:"" json:"notif_bell_type" validate:"required"`
-	BellHost     string `env:"BELL_HOST" envDefault:"" json:"notif_bell_host" validate:"required"`
-	BellPort     string `env:"BELL_PORT" envDefault:"" json:"notif_bell_port" validate:"required"`
-	BellUsername string `env:"BELL_USERNAME" envDefault:"" json:"notif_bell_username" validate:"required"`
-	BellPassword string `env:"BELL_PASSWORD" envDefault:"" json:"notif_bell_password" validate:"required"`
-	BellDatabase string `env:"BELL_DATABASE" envDefault:"" json:"notif_bell_database" validate:"required"`
+	FabdCoreUrl string `env:"FABD_CORE_URL" envDefault:"" json:"notif_fabd_core_url" validate:"required"`
+	BellApiKey  string `env:"BELL_API_KEY" envDefault:"" json:"notif_bell_api_key" validate:"required"`
 }
 
 func InitEnv(c any) error {
