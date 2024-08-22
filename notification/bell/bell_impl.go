@@ -16,12 +16,6 @@ import (
 type gateway struct {
 	FabdCoreUrl string
 	ApiKey      string
-	Type        string
-	Host        string
-	Port        string
-	Username    string
-	Password    string
-	Database    string
 }
 
 func NewNotifBellHandler() (NotifBellClient, error) {
@@ -33,12 +27,6 @@ func NewNotifBellHandler() (NotifBellClient, error) {
 	g := &gateway{
 		FabdCoreUrl: config.FabdCoreUrl,
 		ApiKey:      config.BellApiKey,
-		Type:        config.BellType,
-		Host:        config.BellHost,
-		Port:        config.BellPort,
-		Username:    config.BellUsername,
-		Password:    config.BellPassword,
-		Database:    config.BellDatabase,
 	}
 	return g, err
 }
