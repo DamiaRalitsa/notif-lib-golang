@@ -11,26 +11,25 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/DamiaRalitsa/notif-lib-golang/notification/config"
+	cfg "github.com/DamiaRalitsa/notif-lib-golang/notification/config"
 )
-
-type OCAHandler struct {
-	OCAService OCAClient
-}
 
 type gateway struct {
 	OCAWABASEURL string
 	OCAWAToken   string
 }
 
-func NewOCAHandler() OCAClient {
-	config := &config.NotifConfig{}
-	config.InitEnv()
+func NewOCAHandler() (OCAClient, error) {
+	config := &cfg.OCAConfig{}
+	err := cfg.InitEnv(config)
+	if err != nil {
+		return nil, err
+	}
 	g := &gateway{
 		OCAWABASEURL: config.OCAWABASEURL,
 		OCAWAToken:   config.OCAWAToken,
 	}
-	return g
+	return g, nil
 }
 
 func (g gateway) SendWhatsapp(ctx context.Context, body OCA) (data interface{}, err error) {
@@ -87,7 +86,7 @@ func (g gateway) SendWhatsapp(ctx context.Context, body OCA) (data interface{}, 
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, errors.New("Failed to send notification")
+			return nil, errors.New("failed to send notification")
 		}
 
 	}

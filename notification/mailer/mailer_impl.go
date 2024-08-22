@@ -12,12 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DamiaRalitsa/notif-lib-golang/notification/config"
+	cfg "github.com/DamiaRalitsa/notif-lib-golang/notification/config"
 )
-
-type MailerHandler struct {
-	notificationService SmtpClient
-}
 
 type gateway struct {
 	BaseURL  string
@@ -27,17 +23,19 @@ type gateway struct {
 	Password string
 }
 
-func NewMailerHandler() SmtpClient {
-	config := &config.NotifConfig{}
-	config.InitEnv()
+func NewMailerHandler() (SmtpClient, error) {
+	config := &cfg.EmailConfig{}
+	err := cfg.InitEnv(config)
+	if err != nil {
+		return nil, err
+	}
 	g := &gateway{
-		BaseURL:  config.FabdCoreUrl,
 		Host:     config.EmailHost,
 		Port:     config.EmailPort,
 		Username: config.EmailUserName,
 		Password: config.EmailPassword,
 	}
-	return g
+	return g, err
 }
 
 func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachments MailWithoutAttachments, filePaths []string) (data interface{}, err error) {

@@ -8,12 +8,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/DamiaRalitsa/notif-lib-golang/notification/config"
+	cfg "github.com/DamiaRalitsa/notif-lib-golang/notification/config"
 )
-
-type BellHandler struct {
-	notifBellService NotifBellClient
-}
 
 type gateway struct {
 	Type     string
@@ -24,9 +20,12 @@ type gateway struct {
 	Database string
 }
 
-func NewNotifBellHandler() NotifBellClient {
-	config := &config.NotifConfig{}
-	config.InitEnv()
+func NewNotifBellHandler() (NotifBellClient, error) {
+	config := &cfg.BellConfig{}
+	err := cfg.InitEnv(config)
+	if err != nil {
+		return nil, err
+	}
 	g := &gateway{
 		Type:     config.BellType,
 		Host:     config.BellHost,
@@ -35,11 +34,12 @@ func NewNotifBellHandler() NotifBellClient {
 		Password: config.BellPassword,
 		Database: config.BellDatabase,
 	}
-	return g
+	return g, err
 }
 
 func (g *gateway) SendBell(db *sql.DB, payload NotificationPayload) error {
 
+	// TODO : Go validator
 	if payload.UserID == "" || payload.Type == "" || payload.Name == "" || payload.Email == "" || payload.Icon == "" || payload.Path == "" || payload.Content == nil {
 		return errors.New("missing required fields in the payload")
 	}
