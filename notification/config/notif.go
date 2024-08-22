@@ -14,6 +14,7 @@ type OCAConfig struct {
 
 type BellConfig struct {
 	FabdCoreUrl  string `env:"FABD_CORE_URL" envDefault:"" json:"notif_fabd_core_url" validate:"required"`
+	BellApiKey   string `env:"BELL_API_KEY" envDefault:"" json:"notif_bell_api_key" validate:"required"`
 	BellType     string `env:"BELL_TYPE" envDefault:"" json:"notif_bell_type" validate:"required"`
 	BellHost     string `env:"BELL_HOST" envDefault:"" json:"notif_bell_host" validate:"required"`
 	BellPort     string `env:"BELL_PORT" envDefault:"" json:"notif_bell_port" validate:"required"`
