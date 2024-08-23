@@ -11,12 +11,8 @@ To use this library, make sure the following environment variables are set in yo
 
 ### Bell Service
 
-- `NOTIF_BELL_TYPE`: Type of the Bell service.
-- `NOTIF_BELL_HOST`: Host for the Bell service.
-- `NOTIF_BELL_PORT`: Port for the Bell service.
-- `NOTIF_BELL_USERNAME`: Username for the Bell service.
-- `NOTIF_BELL_PASSWORD`: Password for the Bell service.
-- `NOTIF_BELL_DATABASE`: Database name for the Bell service.
+- `NOTIF_BELL_FABD_CORE_URL`: URL for the FABD core service.
+- `NOTIF_BELL_API_KEY`: ApiKey for the Bell service.
 
 ### OCA Service
 
@@ -29,10 +25,6 @@ To use this library, make sure the following environment variables are set in yo
 - `NOTIF_EMAIL_PORT`: Port for the email service.
 - `NOTIF_EMAIL_USERNAME`: Username for the email service.
 - `NOTIF_EMAIL_PASSWORD`: Password for the email service.
-
-### FABD Core Service
-
-- `NOTIF_FABD_CORE_URL`: URL for the FABD core service.
 
 ## Example
 
@@ -59,6 +51,7 @@ NOTIF_BELL_PORT=5432
 NOTIF_BELL_USERNAME=belluser
 NOTIF_BELL_PASSWORD=bellpassword
 NOTIF_BELL_DATABASE=belldb
+```
 
 # notif bell
 
@@ -92,13 +85,6 @@ func main() {
     // Initialize the notification handler
     notifHandler := bell.NewNotifBellHandler()
 
-    // Example usage
-    db, err := sql.Open("postgres", "user=username password=password dbname=database sslmode=disable")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer db.Close()
-
 ```
 
 ## Sending Notifications
@@ -120,7 +106,7 @@ payload := bell.NotificationPayload{
     Color:   "primary",
 }
 
-err := notifHandler.SendBell(db, payload)
+err := notifHandler.SendBell(ctx, payload)
 if err != nil {
     log.Fatal(err)
 }
@@ -143,7 +129,7 @@ broadcastPayload := bell.NotificationPayloadBroadcast{
     Color:   "primary",
 }
 
-err := notifHandler.SendBellBroadcast(db, userIdentifiers, broadcastPayload)
+err := notifHandler.SendBellBroadcast(ctx, userIdentifiers, broadcastPayload)
 if err != nil {
     log.Fatal(err)
 }
@@ -214,7 +200,7 @@ log.Println("Response:", response)
 First, install the library using `go get`:
 
 ```sh
-go get github.com/DamiaRalitsa/notif-lib-go
+go get github.com/DamiaRalitsa/notif-lib-go/oca@latest
 ```
 
 ## Configuration
@@ -229,7 +215,7 @@ import (
     "log"
     "os"
 
-    "github.com/DamiaRalitsa/notif-lib-go/oca@latest"
+    "github.com/DamiaRalitsa/notif-lib-go/oca"
 )
 
 func main() {
@@ -259,7 +245,7 @@ body := oca.OCA{
 						Parameters: []interface{}{
 							oca.Parameter{
 								Type: "text",
-								Text: "tesst",
+								Text: "123456",
 							},
 						},
 					},
@@ -272,7 +258,7 @@ body := oca.OCA{
 								Parameters: []oca.Parameter{
 									{
 										Type: "text",
-										Text: "tessssstttt",
+										Text: "123456",
 									},
 								},
 							},
