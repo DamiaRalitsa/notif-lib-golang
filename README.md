@@ -31,8 +31,14 @@ To use this library, make sure the following environment variables are set in yo
 Here is an example of how to set these environment variables in a `.env` file:
 
 ```env
-# FABD Core Service
-NOTIF_FABD_CORE_URL=https://example.com/fabd-core
+
+# Bell Service
+NOTIF_BELL_FABD_CORE_URL=yourdomain.com
+NOTIF_BELL_API_KEY=yourapikey
+
+# OCA Service
+NOTIF_OCA_WA_BASE_URL=https://example.com/oca-wa
+NOTIF_OCA_WA_TOKEN=yourtoken
 
 # Email Service
 NOTIF_EMAIL_HOST=smtp.example.com
@@ -40,17 +46,6 @@ NOTIF_EMAIL_PORT=587
 NOTIF_EMAIL_USERNAME=user@example.com
 NOTIF_EMAIL_PASSWORD=yourpassword
 
-# OCA Service
-NOTIF_OCA_WA_BASE_URL=https://example.com/oca-wa
-NOTIF_OCA_WA_TOKEN=yourtoken
-
-# Bell Service
-NOTIF_BELL_TYPE=yourbelltype
-NOTIF_BELL_HOST=bell.example.com
-NOTIF_BELL_PORT=5432
-NOTIF_BELL_USERNAME=belluser
-NOTIF_BELL_PASSWORD=bellpassword
-NOTIF_BELL_DATABASE=belldb
 ```
 
 # notif bell
