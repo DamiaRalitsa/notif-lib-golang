@@ -56,7 +56,6 @@ First, install the library using `go get`:
 
 ```sh
 go get github.com/DamiaRalitsa/notif-lib-go/bell@latest
-go get github.com/lib/pq
 ```
 
 ## Configuration
