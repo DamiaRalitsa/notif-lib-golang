@@ -2,6 +2,7 @@ package bell
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,7 +31,7 @@ func NewNotifBellHandler() (NotifBellClient, error) {
 	return g, err
 }
 
-func (g *gateway) SendBell(payload NotificationPayload) error {
+func (g *gateway) SendBell(ctx context.Context, payload NotificationPayload) error {
 
 	// TODO : Go validator
 	if payload.UserID == "" || payload.Type == "" || payload.Name == "" || payload.Email == "" || payload.Icon == "" || payload.Path == "" || payload.Content == nil {
@@ -48,7 +49,7 @@ func (g *gateway) SendBell(payload NotificationPayload) error {
 	return nil
 }
 
-func (g *gateway) SendBellBroadcast(userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
+func (g *gateway) SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
 	if len(userIdentifiers) == 0 {
 		return errors.New("user identifiers array is empty")
 	}
