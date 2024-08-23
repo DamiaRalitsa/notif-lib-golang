@@ -19,14 +19,13 @@ type gateway struct {
 }
 
 func NewNotifBellHandler() (NotifBellClient, error) {
-	config := &cfg.BellConfig{}
-	err := cfg.InitEnv(config)
+	config, err := cfg.InitEnv(cfg.BELL)
 	if err != nil {
 		return nil, err
 	}
 	g := &gateway{
-		FabdCoreUrl: config.FabdCoreUrl,
-		ApiKey:      config.BellApiKey,
+		FabdCoreUrl: config.BellConfig.FabdCoreUrl,
+		ApiKey:      config.BellConfig.BellApiKey,
 	}
 	return g, err
 }

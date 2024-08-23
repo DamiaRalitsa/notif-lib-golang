@@ -20,14 +20,14 @@ type gateway struct {
 }
 
 func NewOCAHandler() (OCAClient, error) {
-	config := &cfg.OCAConfig{}
-	err := cfg.InitEnv(config)
+	config, err := cfg.InitEnv(cfg.OCA)
 	if err != nil {
+		log.Fatalf("Failed to initialize environment: %v", err)
 		return nil, err
 	}
 	g := &gateway{
-		OCAWABASEURL: config.OCAWABASEURL,
-		OCAWAToken:   config.OCAWAToken,
+		OCAWABASEURL: config.OCAConfig.OCAWABASEURL,
+		OCAWAToken:   config.OCAConfig.OCAWAToken,
 	}
 	return g, nil
 }

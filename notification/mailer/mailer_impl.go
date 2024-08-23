@@ -24,16 +24,15 @@ type gateway struct {
 }
 
 func NewMailerHandler() (SmtpClient, error) {
-	config := &cfg.EmailConfig{}
-	err := cfg.InitEnv(config)
+	config, err := cfg.InitEnv(cfg.Email)
 	if err != nil {
 		return nil, err
 	}
 	g := &gateway{
-		Host:     config.EmailHost,
-		Port:     config.EmailPort,
-		Username: config.EmailUserName,
-		Password: config.EmailPassword,
+		Host:     config.EmailConfig.EmailHost,
+		Port:     config.EmailConfig.EmailPort,
+		Username: config.EmailConfig.EmailUserName,
+		Password: config.EmailConfig.EmailPassword,
 	}
 	return g, err
 }
