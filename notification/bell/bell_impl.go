@@ -2,6 +2,7 @@ package bell
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,19 +20,18 @@ type gateway struct {
 }
 
 func NewNotifBellHandler() (NotifBellClient, error) {
-	config := &cfg.BellConfig{}
-	err := cfg.InitEnv(config)
+	config, err := cfg.InitEnv(cfg.BELL)
 	if err != nil {
 		return nil, err
 	}
 	g := &gateway{
-		FabdCoreUrl: config.FabdCoreUrl,
-		ApiKey:      config.BellApiKey,
+		FabdCoreUrl: config.BellConfig.FabdCoreUrl,
+		ApiKey:      config.BellConfig.BellApiKey,
 	}
 	return g, err
 }
 
-func (g *gateway) SendBell(payload NotificationPayload) error {
+func (g *gateway) SendBell(ctx context.Context, payload NotificationPayload) error {
 
 	// TODO : Go validator
 	if payload.UserID == "" || payload.Type == "" || payload.Name == "" || payload.Email == "" || payload.Icon == "" || payload.Path == "" || payload.Content == nil {
@@ -49,7 +49,7 @@ func (g *gateway) SendBell(payload NotificationPayload) error {
 	return nil
 }
 
-func (g *gateway) SendBellBroadcast(userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
+func (g *gateway) SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
 	if len(userIdentifiers) == 0 {
 		return errors.New("user identifiers array is empty")
 	}

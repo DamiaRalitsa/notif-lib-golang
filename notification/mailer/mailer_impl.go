@@ -24,16 +24,15 @@ type gateway struct {
 }
 
 func NewMailerHandler() (SmtpClient, error) {
-	config := &cfg.EmailConfig{}
-	err := cfg.InitEnv(config)
+	config, err := cfg.InitEnv(cfg.Email)
 	if err != nil {
 		return nil, err
 	}
 	g := &gateway{
-		Host:     config.EmailHost,
-		Port:     config.EmailPort,
-		Username: config.EmailUserName,
-		Password: config.EmailPassword,
+		Host:     config.EmailConfig.EmailHost,
+		Port:     config.EmailConfig.EmailPort,
+		Username: config.EmailConfig.EmailUserName,
+		Password: config.EmailConfig.EmailPassword,
 	}
 	return g, err
 }
@@ -68,14 +67,20 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 		Attachments: attachments,
 	}
 
-	return g.SendEmail(ctx, mail, start)
+	success, err := g.SendEmail(ctx, mail)
+	if err != nil {
+		log.Printf("Failed to send email with filePaths: %v\n", err)
+		return nil, err
+	}
+
+	log.Printf("sendBell took %v", time.Since(start))
+	log.Println("Email Sent Successfully!")
+	return success, err
 }
 
-func (g *gateway) SendEmail(ctx context.Context, mail Mail, timer time.Time) (data interface{}, err error) {
+func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, err error) {
 
-	if timer == (time.Time{}) {
-		timer = time.Now()
-	}
+	start := time.Now()
 
 	from := g.Username
 	password := g.Password
@@ -122,9 +127,8 @@ func (g *gateway) SendEmail(ctx context.Context, mail Mail, timer time.Time) (da
 		return "Failed", err
 	}
 
-	log.Printf("sendBell took %v", time.Since(timer))
-
-	fmt.Println("Email Sent Successfully!")
+	log.Printf("sendBell took %v", time.Since(start))
+	log.Println("Email Sent Successfully!")
 	return "OKAY", nil
 }
 

@@ -1,6 +1,8 @@
 package bell
 
+import "context"
+
 type NotifBellClient interface {
-	SendBell(payload NotificationPayload) error
-	SendBellBroadcast(userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error
+	SendBell(ctx context.Context, payload NotificationPayload) error
+	SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error
 }
