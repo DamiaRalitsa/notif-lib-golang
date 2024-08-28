@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
+	"sync"
 	"time"
 
 	cfg "github.com/DamiaRalitsa/notif-lib-golang/notification/config"
@@ -32,20 +34,53 @@ func NewNotifBellHandler() (NotifBellClient, error) {
 }
 
 func (g *gateway) SendBell(ctx context.Context, payload NotificationPayload) error {
-
-	// TODO : Go validator
-	if payload.UserID == "" || payload.Type == "" || payload.Name == "" || payload.Email == "" || payload.Icon == "" || payload.Path == "" || payload.Content == nil {
-		return errors.New("missing required fields in the payload")
-	}
-
 	start := time.Now()
+	defer func() {
+		log.Printf("sendNotif took %v", time.Since(start))
+	}()
 
-	err := g.pushNotif(payload)
-	if err != nil {
-		return fmt.Errorf("failed to send bell notifications: %v", err)
+	var wg sync.WaitGroup
+	errChan := make(chan error, 1)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := validatePayload(payload); err != nil {
+			select {
+			case errChan <- err:
+			default:
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	select {
+	case err := <-errChan:
+		return err
+	default:
 	}
 
-	log.Printf("sendBell took %v", time.Since(start))
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := g.pushNotif(payload); err != nil {
+			select {
+			case errChan <- fmt.Errorf("failed to send bell notifications: %v", err):
+			default:
+			}
+		}
+	}()
+
+	wg.Wait()
+	close(errChan)
+
+	select {
+	case err := <-errChan:
+		return err
+	default:
+	}
+
 	return nil
 }
 
@@ -53,29 +88,71 @@ func (g *gateway) SendBellBroadcast(ctx context.Context, userIdentifiers []UserI
 	if len(userIdentifiers) == 0 {
 		return errors.New("user identifiers array is empty")
 	}
+
 	start := time.Now()
+	defer func() {
+		log.Printf("sendNotif took %v", time.Since(start))
+	}()
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(userIdentifiers))
 
 	for _, user := range userIdentifiers {
-		notificationPayload := NotificationPayload{
-			UserID:  user.UserID,
-			Type:    payload.Type,
-			Name:    user.Name,
-			Email:   user.Email,
-			Phone:   user.Phone,
-			Icon:    payload.Icon,
-			Path:    payload.Path,
-			Content: payload.Content,
-			Color:   payload.Color,
-		}
+		wg.Add(1)
+		go func(user UserIdentifier) {
+			defer wg.Done()
 
-		err := g.pushNotif(notificationPayload)
+			notificationPayload := NotificationPayload{
+				UserID:  user.UserID,
+				Type:    payload.Type,
+				Name:    user.Name,
+				Email:   user.Email,
+				Phone:   user.Phone,
+				Icon:    payload.Icon,
+				Path:    payload.Path,
+				Content: payload.Content,
+				Color:   payload.Color,
+			}
+
+			if err := validatePayload(notificationPayload); err != nil {
+				return
+			}
+
+			if err := g.pushNotif(notificationPayload); err != nil {
+				log.Printf("Error sending notification to user %s: %v", user.UserID, err)
+				select {
+				case errChan <- fmt.Errorf("failed to send broadcast notifications to user %s", user.UserID):
+				default:
+				}
+			}
+		}(user)
+	}
+
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
+
+	for err := range errChan {
 		if err != nil {
-			log.Printf("Error sending notification to user %s: %v", user.UserID, err)
-			return errors.New("failed to send broadcast notifications")
+			return err
 		}
 	}
 
-	log.Printf("sendBellBroadcast took %v", time.Since(start))
+	return nil
+}
+
+func validatePayload(payload NotificationPayload) error {
+	v := reflect.ValueOf(payload)
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if field.Kind() == reflect.String && field.String() == "" {
+			return fmt.Errorf("missing required field: %s", v.Type().Field(i).Name)
+		}
+		if field.Kind() == reflect.Interface && field.IsNil() {
+			return fmt.Errorf("missing required field: %s", v.Type().Field(i).Name)
+		}
+	}
 	return nil
 }
 

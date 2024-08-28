@@ -10,6 +10,7 @@ import (
 	"net/smtp"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	cfg "github.com/DamiaRalitsa/notif-lib-golang/notification/config"
@@ -39,26 +40,54 @@ func NewMailerHandler() (SmtpClient, error) {
 
 func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachments MailWithoutAttachments, filePaths []string) (data interface{}, err error) {
 	start := time.Now()
-	attachments := make([]Attachments, 0)
+	attachments := make([]Attachments, len(filePaths))
 
-	for _, filePath := range filePaths {
-		fileContent, err := ioutil.ReadFile(filePath)
-		if err != nil {
-			return nil, err
-		}
-
-		fileName := filepath.Base(filePath)
-		contentType := mime.TypeByExtension(filepath.Ext(fileName))
-
-		attachment := Attachments{
-			FileName:    fileName,
-			Content:     fileContent,
-			Encoding:    "base64", // Assuming base64 encoding
-			ContentType: contentType,
-		}
-
-		attachments = append(attachments, attachment)
+	type result struct {
+		index      int
+		attachment Attachments
+		err        error
 	}
+
+	results := make(chan result, len(filePaths))
+	var wg sync.WaitGroup
+
+	for i, filePath := range filePaths {
+		wg.Add(1)
+		go func(i int, filePath string) {
+			defer wg.Done()
+			fileContent, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				results <- result{i, Attachments{}, err}
+				return
+			}
+
+			fileName := filepath.Base(filePath)
+			contentType := mime.TypeByExtension(filepath.Ext(fileName))
+
+			attachment := Attachments{
+				FileName:    fileName,
+				Content:     fileContent,
+				Encoding:    "base64", // Assuming base64 encoding
+				ContentType: contentType,
+			}
+
+			results <- result{i, attachment, nil}
+		}(i, filePath)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for res := range results {
+		if res.err != nil {
+			return nil, res.err
+		}
+		attachments[res.index] = res.attachment
+	}
+
+	wg.Wait()
 
 	mail := Mail{
 		To:          mailWithoutAttachments.To,
@@ -73,13 +102,12 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 		return nil, err
 	}
 
-	log.Printf("sendBell took %v", time.Since(start))
+	log.Printf("sendNotif took %v", time.Since(start))
 	log.Println("Email Sent Successfully!")
 	return success, err
 }
 
 func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, err error) {
-
 	start := time.Now()
 
 	from := g.Username
@@ -106,16 +134,43 @@ func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, e
 		mail.Message +
 		"\r\n"
 
-	newAttachments := ""
-	for _, attachment := range mail.Attachments {
-		newAttachments += "--MULTIPART_BOUNDARY\r\n" +
-			`Content-Type: application/octet-stream` + "\r\n" +
-			`Content-Transfer-Encoding: base64` + "\r\n" +
-			`Content-Disposition: attachment; filename="` + attachment.FileName + `"` + "\r\n" +
-			"\r\n" +
-			base64.StdEncoding.EncodeToString(attachment.Content) +
-			"\r\n"
+	type result struct {
+		encodedAttachment string
+		err               error
 	}
+
+	results := make(chan result, len(mail.Attachments))
+	var wg sync.WaitGroup
+
+	for _, attachment := range mail.Attachments {
+		wg.Add(1)
+		go func(attachment Attachments) {
+			defer wg.Done()
+			encodedAttachment := "--MULTIPART_BOUNDARY\r\n" +
+				`Content-Type: application/octet-stream` + "\r\n" +
+				`Content-Transfer-Encoding: base64` + "\r\n" +
+				`Content-Disposition: attachment; filename="` + attachment.FileName + `"` + "\r\n" +
+				"\r\n" +
+				base64.StdEncoding.EncodeToString(attachment.Content) +
+				"\r\n"
+			results <- result{encodedAttachment, nil}
+		}(attachment)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	newAttachments := ""
+	for res := range results {
+		if res.err != nil {
+			return "Failed", res.err
+		}
+		newAttachments += res.encodedAttachment
+	}
+
+	wg.Wait()
 
 	newMessage := []byte(header + "\r\n" + bodyHeader + newAttachments + "--MULTIPART_BOUNDARY--")
 
@@ -127,7 +182,7 @@ func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, e
 		return "Failed", err
 	}
 
-	log.Printf("sendBell took %v", time.Since(start))
+	log.Printf("sendNotif took %v", time.Since(start))
 	log.Println("Email Sent Successfully!")
 	return "OKAY", nil
 }
