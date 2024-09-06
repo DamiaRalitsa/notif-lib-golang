@@ -11,7 +11,6 @@ To use this library, make sure the following environment variables are set in yo
 
 ### Bell Service
 
-- `NOTIF_BELL_FABD_CORE_URL`: URL for the FABD core service.
 - `NOTIF_BELL_API_KEY`: ApiKey for the Bell service.
 
 ### OCA Service
@@ -26,25 +25,33 @@ To use this library, make sure the following environment variables are set in yo
 - `NOTIF_EMAIL_USERNAME`: Username for the email service.
 - `NOTIF_EMAIL_PASSWORD`: Password for the email service.
 
+### FABD Core Service
+
+- `NOTIF_FABD_CORE_URL`: URL for the FABD core service.
+- `NOTIF_API_KEY`: ApiKey for the FABD core service.
+
 ## Example
 
 Here is an example of how to set these environment variables in a `.env` file:
 
 ```env
-
 # Bell Service
-NOTIF_BELL_FABD_CORE_URL=yourdomain.com
 NOTIF_BELL_API_KEY=yourapikey
 
 # OCA Service
 NOTIF_OCA_WA_BASE_URL=https://example.com/oca-wa
 NOTIF_OCA_WA_TOKEN=yourtoken
+NOTIF_OCA_WA_TEMPLATE_CODE=yourtemplatecode
 
 # Email Service
 NOTIF_EMAIL_HOST=smtp.example.com
 NOTIF_EMAIL_PORT=587
 NOTIF_EMAIL_USERNAME=user@example.com
 NOTIF_EMAIL_PASSWORD=yourpassword
+
+# FABD Core Service
+NOTIF_FABD_CORE_URL=yourdomain.com
+NOTIF_API_KEY=yourapikey
 
 ```
 
