@@ -25,7 +25,7 @@ type gateway struct {
 }
 
 func NewMailerHandler() (SmtpClient, error) {
-	config, err := cfg.InitEnv(cfg.Email)
+	config, err := cfg.InitEnv(cfg.EMAIL)
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +40,10 @@ func NewMailerHandler() (SmtpClient, error) {
 
 func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachments MailWithoutAttachments, filePaths []string) (data interface{}, err error) {
 	start := time.Now()
+	defer func() {
+		log.Printf("readFiles %v", time.Since(start))
+	}()
+
 	attachments := make([]Attachments, len(filePaths))
 
 	type result struct {
@@ -87,8 +91,6 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 		attachments[res.index] = res.attachment
 	}
 
-	wg.Wait()
-
 	mail := Mail{
 		To:          mailWithoutAttachments.To,
 		Subject:     mailWithoutAttachments.Subject,
@@ -96,15 +98,9 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 		Attachments: attachments,
 	}
 
-	success, err := g.SendEmail(ctx, mail)
-	if err != nil {
-		log.Printf("Failed to send email with filePaths: %v\n", err)
-		return nil, err
-	}
+	g.SendEmail(ctx, mail)
 
-	log.Printf("sendNotif took %v", time.Since(start))
-	log.Println("Email Sent Successfully!")
-	return success, err
+	return "OKAY", nil
 }
 
 func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, err error) {

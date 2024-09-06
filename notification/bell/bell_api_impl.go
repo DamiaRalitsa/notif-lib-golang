@@ -15,24 +15,24 @@ import (
 	cfg "github.com/DamiaRalitsa/notif-lib-golang/notification/config"
 )
 
-type gateway struct {
+type gatewayApi struct {
 	FabdCoreUrl string
 	ApiKey      string
 }
 
-func NewNotifBellHandler() (NotifBellClient, error) {
-	config, err := cfg.InitEnv(cfg.BELL)
+func NewNotifBellApiHandler() (NotifBellClient, error) {
+	config, err := cfg.InitEnv(cfg.API)
 	if err != nil {
 		return nil, err
 	}
-	g := &gateway{
-		FabdCoreUrl: config.BellConfig.FabdCoreUrl,
-		ApiKey:      config.BellConfig.BellApiKey,
+	g := &gatewayApi{
+		FabdCoreUrl: config.ApiConfig.FabdCoreUrl,
+		ApiKey:      config.ApiConfig.ApiKey,
 	}
 	return g, err
 }
 
-func (g *gateway) SendBell(ctx context.Context, payload NotificationPayload) error {
+func (g *gatewayApi) SendBell(ctx context.Context, payload NotificationPayload) error {
 	start := time.Now()
 	defer func() {
 		log.Printf("sendNotif took %v", time.Since(start))
@@ -83,7 +83,7 @@ func (g *gateway) SendBell(ctx context.Context, payload NotificationPayload) err
 	return nil
 }
 
-func (g *gateway) SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
+func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
 	if len(userIdentifiers) == 0 {
 		return errors.New("user identifiers array is empty")
 	}
@@ -141,8 +141,8 @@ func (g *gateway) SendBellBroadcast(ctx context.Context, userIdentifiers []UserI
 	return nil
 }
 
-func (g *gateway) pushNotif(payload NotificationPayload) error {
-	url := g.FabdCoreUrl + "/v4/notifications"
+func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
+	url := g.FabdCoreUrl + "/v4/notification-service/notifications/bell"
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return err
