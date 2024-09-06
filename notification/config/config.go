@@ -15,7 +15,8 @@ func init() {
 const (
 	OCA           = "oca"
 	BELL          = "bell"
-	Email         = "email"
+	EMAIL         = "email"
+	API           = "api"
 	EnvPrefix     = "NOTIF_"
 	EmailHost     = EnvPrefix + "EMAIL_HOST"
 	EmailPort     = EnvPrefix + "EMAIL_PORT"
@@ -25,14 +26,17 @@ const (
 	OCAWABASEURL = EnvPrefix + "OCA_WA_BASE_URL"
 	OCAWAToken   = EnvPrefix + "OCA_WA_TOKEN"
 
-	BellAPIKEY      = EnvPrefix + "BELL_API_KEY"
-	BellFabdCoreUrl = EnvPrefix + "BELL_FABD_CORE_URL"
+	BellAPIKEY = EnvPrefix + "BELL_API_KEY"
+
+	FabdCoreUrl = EnvPrefix + "BELL_FABD_CORE_URL"
+	ApiKey      = EnvPrefix
 )
 
 type Config struct {
 	EmailConfig EmailConfig
 	OCAConfig   OCAConfig
 	BellConfig  BellConfig
+	ApiConfig   ApiConfig
 }
 
 type EmailConfig struct {
@@ -52,6 +56,11 @@ type BellConfig struct {
 	BellApiKey  string `json:"notif_bell_api_key" validate:"required"`
 }
 
+type ApiConfig struct {
+	FabdCoreUrl string `json:"notif_fabd_core_url" validate:"required"`
+	ApiKey      string `json:"notif_api_key" validate:"required"`
+}
+
 func getEnv(key string) string {
 	return os.Getenv(key)
 }
@@ -59,7 +68,7 @@ func getEnv(key string) string {
 func InitEnv(configName string) (Config, error) {
 	config := Config{}
 	switch configName {
-	case Email:
+	case EMAIL:
 		emailConfig := EmailConfig{
 			EmailHost:     getEnv(EmailHost),
 			EmailPort:     getEnv(EmailPort),
@@ -83,7 +92,7 @@ func InitEnv(configName string) (Config, error) {
 		config.OCAConfig = ocaConfig
 	case BELL:
 		bellConfig := BellConfig{
-			FabdCoreUrl: getEnv(BellFabdCoreUrl),
+			FabdCoreUrl: getEnv(config.BellConfig.FabdCoreUrl),
 			BellApiKey:  getEnv(BellAPIKEY),
 		}
 		if err := validateEnv(&bellConfig); err != nil {
@@ -91,6 +100,16 @@ func InitEnv(configName string) (Config, error) {
 			return Config{}, err
 		}
 		config.BellConfig = bellConfig
+	case API:
+		apiConfig := ApiConfig{
+			FabdCoreUrl: getEnv(config.ApiConfig.FabdCoreUrl),
+			ApiKey:      getEnv(ApiKey),
+		}
+		if err := validateEnv(&apiConfig); err != nil {
+			log.Printf("Api configuration is not valid: %v", err)
+			return Config{}, err
+		}
+		config.ApiConfig = apiConfig
 	}
 	return config, nil
 }
