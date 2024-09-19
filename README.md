@@ -27,8 +27,8 @@ To use this library, make sure the following environment variables are set in yo
 
 ### FABD Core Service
 
-- `NOTIF_FABD_CORE_URL`: URL for the FABD core service.
-- `NOTIF_API_KEY`: ApiKey for the FABD core service.
+- `NOTIF_BELL_FABD_CORE_URL`: URL for the FABD core service.
+- `API_KEY`: ApiKey for the FABD core service.
 
 ## Example
 
@@ -50,8 +50,8 @@ NOTIF_EMAIL_USERNAME=user@example.com
 NOTIF_EMAIL_PASSWORD=yourpassword
 
 # FABD Core Service
-NOTIF_FABD_CORE_URL=yourdomain.com
-NOTIF_API_KEY=yourapikey
+NOTIF_BELL_FABD_CORE_URL=yourdomain.com
+API_KEY=yourapikey
 
 ```
 
@@ -62,7 +62,7 @@ NOTIF_API_KEY=yourapikey
 First, install the library using `go get`:
 
 ```sh
-go get github.com/DamiaRalitsa/notif-lib-go/bell@latest
+go get github.com/DamiaRalitsa/notif-lib-golang/notification/bell@latest
 ```
 
 ## Configuration
@@ -77,7 +77,7 @@ import (
     "log"
     "os"
 
-    "github.com/DamiaRalitsa/notif-lib-go/bell"
+    "github.com/DamiaRalitsa/notif-lib-golang/notification/bell"
 )
 
 func main() {
@@ -142,7 +142,7 @@ if err != nil {
 First, install the library using `go get`:
 
 ```sh
-go get github.com/DamiaRalitsa/notif-lib-go/mailer@latest
+go get github.com/DamiaRalitsa/notif-lib-golang/notification/mailer@latest
 ```
 
 ## Configuration
@@ -157,7 +157,7 @@ import (
     "log"
     "os"
 
-    "github.com/DamiaRalitsa/notif-lib-go/mailer"
+    "github.com/DamiaRalitsa/notif-lib-golang/notification/mailer"
 )
 
 func main() {
@@ -200,7 +200,7 @@ log.Println("Response:", response)
 First, install the library using `go get`:
 
 ```sh
-go get github.com/DamiaRalitsa/notif-lib-go/oca@latest
+go get github.com/DamiaRalitsa/notif-lib-golang/notification/oca@latest
 ```
 
 ## Configuration
@@ -215,7 +215,7 @@ import (
     "log"
     "os"
 
-    "github.com/DamiaRalitsa/notif-lib-go/oca"
+    "github.com/DamiaRalitsa/notif-lib-golang/notification/oca"
 )
 
 func main() {
