@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
@@ -162,16 +161,6 @@ func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
 		return err
 	}
 	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Error response from external endpoint: %s", body)
-		return fmt.Errorf("received non-200 response: %s", resp.Status)
-	}
 
 	log.Println("Response from external endpoint:", resp.Status)
 	return nil

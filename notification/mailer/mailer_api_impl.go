@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -128,11 +127,6 @@ func (g *gatewayApi) SendEmail(ctx context.Context, payload Mail) (data interfac
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Error response from external endpoint: %s", body)
-		return nil, fmt.Errorf("received non-200 response: %s", resp.Status)
 	}
 
 	var apiResponse ApiResponse

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -60,11 +59,6 @@ func (g gatewayApi) SendWhatsapp(ctx context.Context, payload OCA) (data interfa
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Error response from external endpoint: %s", body)
-		return nil, fmt.Errorf("received non-200 response: %s", resp.Status)
 	}
 
 	var apiResponse ApiResponse
