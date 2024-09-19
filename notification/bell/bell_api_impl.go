@@ -143,23 +143,36 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 
 func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
 	url := g.FabdCoreUrl + "/v4/notification-service/notifications/bell"
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	log.Printf("Payload: %s", string(jsonData))
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Authorization", g.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(jsonData))
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Error response from external endpoint: %s", body)
+		return fmt.Errorf("received non-200 response: %s", resp.Status)
+	}
+
 	log.Println("Response from external endpoint:", resp.Status)
 	return nil
 }

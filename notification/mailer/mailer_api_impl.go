@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"mime"
@@ -104,17 +105,19 @@ func (g *gatewayApi) SendEmailWithFilePaths(ctx context.Context, mailWithoutAtta
 
 func (g *gatewayApi) SendEmail(ctx context.Context, payload Mail) (data interface{}, err error) {
 	url := g.FabdCoreUrl + "/v4/notification-service/notifications/mailer"
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Payload: %s", string(jsonData))
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", g.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-	req.Body = ioutil.NopCloser(bytes.NewBuffer(jsonData))
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -125,6 +128,11 @@ func (g *gatewayApi) SendEmail(ctx context.Context, payload Mail) (data interfac
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Error response from external endpoint: %s", body)
+		return nil, fmt.Errorf("received non-200 response: %s", resp.Status)
 	}
 
 	var apiResponse ApiResponse
