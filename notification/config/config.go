@@ -92,7 +92,7 @@ func InitEnv(configName string) (Config, error) {
 		config.OCAConfig = ocaConfig
 	case BELL:
 		bellConfig := BellConfig{
-			FabdCoreUrl: getEnv(config.BellConfig.FabdCoreUrl),
+			FabdCoreUrl: getEnv(FabdCoreUrl),
 			BellApiKey:  getEnv(BellAPIKEY),
 		}
 		if err := validateEnv(&bellConfig); err != nil {
@@ -102,7 +102,7 @@ func InitEnv(configName string) (Config, error) {
 		config.BellConfig = bellConfig
 	case API:
 		apiConfig := ApiConfig{
-			FabdCoreUrl: getEnv(config.ApiConfig.FabdCoreUrl),
+			FabdCoreUrl: getEnv(FabdCoreUrl),
 			ApiKey:      getEnv(ApiKey),
 		}
 		if err := validateEnv(&apiConfig); err != nil {
