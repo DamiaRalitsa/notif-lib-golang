@@ -21,7 +21,7 @@ type gatewayApi struct {
 }
 
 type ApiResponse struct {
-	Status  string `json:"status"`
+	Status  bool   `json:"status"`
 	Message string `json:"message"`
 }
 
