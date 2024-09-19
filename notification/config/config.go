@@ -29,7 +29,7 @@ const (
 	BellAPIKEY = EnvPrefix + "BELL_API_KEY"
 
 	FabdCoreUrl = EnvPrefix + "BELL_FABD_CORE_URL"
-	ApiKey      = EnvPrefix
+	ApiKey      = "API_KEY"
 )
 
 type Config struct {
@@ -52,13 +52,13 @@ type OCAConfig struct {
 }
 
 type BellConfig struct {
-	FabdCoreUrl string `json:"notif_fabd_core_url" validate:"required"`
+	FabdCoreUrl string `json:"notif_bell_fabd_core_url" validate:"required"`
 	BellApiKey  string `json:"notif_bell_api_key" validate:"required"`
 }
 
 type ApiConfig struct {
-	FabdCoreUrl string `json:"notif_fabd_core_url" validate:"required"`
-	ApiKey      string `json:"notif_api_key" validate:"required"`
+	FabdCoreUrl string `json:"notif_bell_fabd_core_url" validate:"required"`
+	ApiKey      string `json:"api_key" validate:"required"`
 }
 
 func getEnv(key string) string {
