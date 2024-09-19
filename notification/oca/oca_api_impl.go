@@ -47,7 +47,7 @@ func (g gatewayApi) SendWhatsapp(ctx context.Context, payload OCA) (data interfa
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", g.ApiKey)
+	req.Header.Set("x-api-key", g.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}

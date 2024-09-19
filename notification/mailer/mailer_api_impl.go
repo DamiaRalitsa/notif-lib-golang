@@ -115,7 +115,7 @@ func (g *gatewayApi) SendEmail(ctx context.Context, payload Mail) (data interfac
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", g.ApiKey)
+	req.Header.Set("x-api-key", g.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
