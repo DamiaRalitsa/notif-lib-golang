@@ -171,7 +171,7 @@ func (g *gatewayApi) SendBell2(ctx context.Context, payload NotificationPayloads
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := g.pushNotif2(payload.NotificationPayload); err != nil {
+		if err := g.pushNotifBulk(payload.NotificationPayload); err != nil {
 			select {
 			case errChan <- fmt.Errorf("failed to send bell notifications: %v", err):
 			default:
@@ -236,7 +236,7 @@ func (g *gatewayApi) SendBellBroadcast2(ctx context.Context, userIdentifiers []U
 		}(user)
 	}
 
-	if err := g.pushNotif2(notificationPayloads); err != nil {
+	if err := g.pushNotifBulk(notificationPayloads); err != nil {
 		log.Printf("Error sending notifications: %v", err)
 		select {
 		case errChan <- fmt.Errorf("failed to send broadcast notifications"):
@@ -284,8 +284,8 @@ func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
 	return nil
 }
 
-func (g *gatewayApi) pushNotif2(payload []NotificationPayload) error {
-	url := g.FabdCoreUrl + "/v4/notification-service/notifications/bell"
+func (g *gatewayApi) pushNotifBulk(payload []NotificationPayload) error {
+	url := g.FabdCoreUrl + "/v4/notification-service/notifications/bell/bulk"
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return err
