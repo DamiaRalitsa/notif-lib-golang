@@ -95,7 +95,7 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(userIdentifiers))
 
-	notificationPayloads := NotificationPayloads{}.NotificationPayload
+	notificationPayloads := []NotificationPayload{}
 
 	var mu sync.Mutex
 
@@ -127,6 +127,8 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 		}(user)
 	}
 
+	wg.Wait()
+
 	if err := g.pushNotifBulk(notificationPayloads); err != nil {
 		log.Printf("Error sending notifications: %v", err)
 		select {
@@ -135,10 +137,7 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 		}
 	}
 
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
+	close(errChan)
 
 	for err := range errChan {
 		if err != nil {
@@ -155,7 +154,6 @@ func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Payload: %s", string(jsonData))
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -181,7 +179,6 @@ func (g *gatewayApi) pushNotifBulk(payload []NotificationPayload) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Payload: %s", string(jsonData))
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {

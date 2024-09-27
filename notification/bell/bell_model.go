@@ -12,10 +12,6 @@ type NotificationPayload struct {
 	Color   string      `json:"color,omitempty"`
 }
 
-type NotificationPayloads struct {
-	NotificationPayload []NotificationPayload `json:"notifications"`
-}
-
 type UserIdentifier struct {
 	UserID string `json:"user_id"`
 	Name   string `json:"name"`
