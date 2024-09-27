@@ -95,6 +95,10 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(userIdentifiers))
 
+	notificationPayloads := []NotificationPayload{}
+
+	var mu sync.Mutex
+
 	for _, user := range userIdentifiers {
 		wg.Add(1)
 		go func(user UserIdentifier) {
@@ -116,20 +120,24 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 				return
 			}
 
-			if err := g.pushNotif(notificationPayload); err != nil {
-				log.Printf("Error sending notification to user %s: %v", user.UserID, err)
-				select {
-				case errChan <- fmt.Errorf("failed to send broadcast notifications to user %s", user.UserID):
-				default:
-				}
-			}
+			mu.Lock()
+			notificationPayloads = append(notificationPayloads, notificationPayload)
+			mu.Unlock()
+
 		}(user)
 	}
 
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
+	wg.Wait()
+
+	if err := g.pushNotifBulk(notificationPayloads); err != nil {
+		log.Printf("Error sending notifications: %v", err)
+		select {
+		case errChan <- fmt.Errorf("failed to send broadcast notifications"):
+		default:
+		}
+	}
+
+	close(errChan)
 
 	for err := range errChan {
 		if err != nil {
@@ -146,7 +154,31 @@ func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Payload: %s", string(jsonData))
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("x-api-key", g.ApiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	log.Println("Response from external endpoint:", resp.Status)
+	return nil
+}
+
+func (g *gatewayApi) pushNotifBulk(payload []NotificationPayload) error {
+	url := g.FabdCoreUrl + "/v4/notification-service/notifications/bell/bulk"
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
