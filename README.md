@@ -27,7 +27,7 @@ To use this library, make sure the following environment variables are set in yo
 
 ### FABD Core Service
 
-- `NOTIF_BELL_FABD_CORE_URL`: URL for the FABD core service.
+- `FABD_BASE_URL`: URL for the FABD core service.
 - `API_KEY`: ApiKey for the FABD core service.
 
 ## Example
@@ -50,7 +50,7 @@ NOTIF_EMAIL_USERNAME=user@example.com
 NOTIF_EMAIL_PASSWORD=yourpassword
 
 # FABD Core Service
-NOTIF_BELL_FABD_CORE_URL=yourdomain.com
+FABD_BASE_URL=yourdomain.com
 API_KEY=yourapikey
 
 ```

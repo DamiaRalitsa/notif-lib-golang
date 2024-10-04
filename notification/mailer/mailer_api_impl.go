@@ -16,7 +16,7 @@ import (
 )
 
 type gatewayApi struct {
-	FabdCoreUrl string
+	FabdBaseUrl string
 	ApiKey      string
 }
 
@@ -31,7 +31,7 @@ func NewMailerApiHandler() (SmtpClient, error) {
 		return nil, err
 	}
 	g := &gatewayApi{
-		FabdCoreUrl: config.ApiConfig.FabdCoreUrl,
+		FabdBaseUrl: config.ApiConfig.FabdBaseUrl,
 		ApiKey:      config.ApiConfig.ApiKey,
 	}
 	return g, err
@@ -103,7 +103,7 @@ func (g *gatewayApi) SendEmailWithFilePaths(ctx context.Context, mailWithoutAtta
 }
 
 func (g *gatewayApi) SendEmail(ctx context.Context, payload Mail) (data interface{}, err error) {
-	url := g.FabdCoreUrl + "/v4/notification-service/notifications/mailer"
+	url := g.FabdBaseUrl + "/v4/notification-service/notifications/mailer"
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err

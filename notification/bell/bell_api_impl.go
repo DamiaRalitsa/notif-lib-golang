@@ -15,7 +15,7 @@ import (
 )
 
 type gatewayApi struct {
-	FabdCoreUrl string
+	FabdBaseUrl string
 	ApiKey      string
 }
 
@@ -25,7 +25,7 @@ func NewNotifBellApiHandler() (NotifBellClient, error) {
 		return nil, err
 	}
 	g := &gatewayApi{
-		FabdCoreUrl: config.ApiConfig.FabdCoreUrl,
+		FabdBaseUrl: config.ApiConfig.FabdBaseUrl,
 		ApiKey:      config.ApiConfig.ApiKey,
 	}
 	return g, err
@@ -149,7 +149,7 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 }
 
 func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
-	url := g.FabdCoreUrl + "/v4/notification-service/notifications/bell"
+	url := g.FabdBaseUrl + "/v4/webhooks/notifications"
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -159,7 +159,7 @@ func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("x-api-key", g.ApiKey)
+	req.Header.Set("Authorization", g.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
@@ -174,7 +174,7 @@ func (g *gatewayApi) pushNotif(payload NotificationPayload) error {
 }
 
 func (g *gatewayApi) pushNotifBulk(payload []NotificationPayload) error {
-	url := g.FabdCoreUrl + "/v4/notification-service/notifications/bell/bulk"
+	url := g.FabdBaseUrl + "/v4/webhooks/notifications-bulk"
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func (g *gatewayApi) pushNotifBulk(payload []NotificationPayload) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("x-api-key", g.ApiKey)
+	req.Header.Set("Authorization", g.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}

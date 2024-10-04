@@ -28,7 +28,7 @@ const (
 
 	BellAPIKEY = EnvPrefix + "BELL_API_KEY"
 
-	FabdCoreUrl = EnvPrefix + "BELL_FABD_CORE_URL"
+	FabdBaseUrl = "FABD_BASE_URL"
 	ApiKey      = "API_KEY"
 )
 
@@ -52,12 +52,12 @@ type OCAConfig struct {
 }
 
 type BellConfig struct {
-	FabdCoreUrl string `json:"notif_bell_fabd_core_url" validate:"required"`
-	BellApiKey  string `json:"notif_bell_api_key" validate:"required"`
+	FabdBaseUrl string `json:"fabd_base_url" validate:"required"`
+	BellApiKey  string `json:"api_key" validate:"required"`
 }
 
 type ApiConfig struct {
-	FabdCoreUrl string `json:"notif_bell_fabd_core_url" validate:"required"`
+	FabdBaseUrl string `json:"fabd_base_url" validate:"required"`
 	ApiKey      string `json:"api_key" validate:"required"`
 }
 
@@ -92,7 +92,7 @@ func InitEnv(configName string) (Config, error) {
 		config.OCAConfig = ocaConfig
 	case BELL:
 		bellConfig := BellConfig{
-			FabdCoreUrl: getEnv(FabdCoreUrl),
+			FabdBaseUrl: getEnv(FabdBaseUrl),
 			BellApiKey:  getEnv(BellAPIKEY),
 		}
 		if err := validateEnv(&bellConfig); err != nil {
@@ -102,7 +102,7 @@ func InitEnv(configName string) (Config, error) {
 		config.BellConfig = bellConfig
 	case API:
 		apiConfig := ApiConfig{
-			FabdCoreUrl: getEnv(FabdCoreUrl),
+			FabdBaseUrl: getEnv(FabdBaseUrl),
 			ApiKey:      getEnv(ApiKey),
 		}
 		if err := validateEnv(&apiConfig); err != nil {

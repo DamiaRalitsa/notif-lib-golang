@@ -16,7 +16,7 @@ import (
 )
 
 type gateway struct {
-	FabdCoreUrl string
+	FabdBaseUrl string
 	ApiKey      string
 }
 
@@ -26,7 +26,7 @@ func NewNotifBellHandler() (NotifBellClient, error) {
 		return nil, err
 	}
 	g := &gateway{
-		FabdCoreUrl: config.BellConfig.FabdCoreUrl,
+		FabdBaseUrl: config.BellConfig.FabdBaseUrl,
 		ApiKey:      config.BellConfig.BellApiKey,
 	}
 	return g, err
@@ -142,7 +142,7 @@ func (g *gateway) SendBellBroadcast(ctx context.Context, userIdentifiers []UserI
 }
 
 func (g *gateway) pushNotif(payload NotificationPayload) error {
-	url := g.FabdCoreUrl + "/v4/notifications"
+	url := g.FabdBaseUrl + "/v4/webhooks/notification"
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return err

@@ -12,7 +12,7 @@ import (
 )
 
 type gatewayApi struct {
-	FabdCoreUrl string
+	FabdBaseUrl string
 	ApiKey      string
 }
 
@@ -28,14 +28,14 @@ func NewOCAApiHandler() (OCAClient, error) {
 		return nil, err
 	}
 	g := &gatewayApi{
-		FabdCoreUrl: config.ApiConfig.FabdCoreUrl,
+		FabdBaseUrl: config.ApiConfig.FabdBaseUrl,
 		ApiKey:      config.ApiConfig.ApiKey,
 	}
 	return g, nil
 }
 
 func (g gatewayApi) SendWhatsapp(ctx context.Context, payload OCA) (data interface{}, err error) {
-	url := g.FabdCoreUrl + "/v4/notification-service/notifications/whatsapp/oca"
+	url := g.FabdBaseUrl + "/v4/notification-service/notifications/whatsapp/oca"
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
