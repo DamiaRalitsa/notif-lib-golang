@@ -35,7 +35,7 @@ func NewOCAApiHandler() (OCAClient, error) {
 }
 
 func (g gatewayApi) SendWhatsapp(ctx context.Context, payload OCA) (data interface{}, err error) {
-	url := g.FabdBaseUrl + "/v4/notification-service/notifications/whatsapp/oca"
+	url := g.FabdBaseUrl + "/v4/webhooks/whatsapp-notification"
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (g gatewayApi) SendWhatsapp(ctx context.Context, payload OCA) (data interfa
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("x-api-key", g.ApiKey)
+	req.Header.Set("Authorization", g.ApiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}

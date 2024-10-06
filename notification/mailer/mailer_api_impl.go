@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
-	"mime"
+	"mime/multipart"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -43,11 +45,11 @@ func (g *gatewayApi) SendEmailWithFilePaths(ctx context.Context, mailWithoutAtta
 		log.Printf("readFiles %v", time.Since(start))
 	}()
 
-	attachments := make([]Attachments, len(filePaths))
+	attachments := make([]Attachment, len(filePaths))
 
 	type result struct {
 		index      int
-		attachment Attachments
+		attachment Attachment
 		err        error
 	}
 
@@ -58,22 +60,11 @@ func (g *gatewayApi) SendEmailWithFilePaths(ctx context.Context, mailWithoutAtta
 		wg.Add(1)
 		go func(i int, filePath string) {
 			defer wg.Done()
-			fileContent, err := ioutil.ReadFile(filePath)
-			if err != nil {
-				results <- result{i, Attachments{}, err}
-				return
-			}
-
 			fileName := filepath.Base(filePath)
-			contentType := mime.TypeByExtension(filepath.Ext(fileName))
-
-			attachment := Attachments{
-				FileName:    fileName,
-				Content:     fileContent,
-				Encoding:    "base64", // Assuming base64 encoding
-				ContentType: contentType,
+			attachment := Attachment{
+				FileName: fileName,
+				Path:     filePath,
 			}
-
 			results <- result{i, attachment, nil}
 		}(i, filePath)
 	}
@@ -91,31 +82,64 @@ func (g *gatewayApi) SendEmailWithFilePaths(ctx context.Context, mailWithoutAtta
 	}
 
 	mail := Mail{
-		To:          mailWithoutAttachments.To,
-		Subject:     mailWithoutAttachments.Subject,
-		Message:     mailWithoutAttachments.Message,
-		Attachments: attachments,
+		To:           mailWithoutAttachments.To,
+		Subject:      mailWithoutAttachments.Subject,
+		TemplateCode: mailWithoutAttachments.Message,
+		Data:         map[string]interface{}{"text": mailWithoutAttachments.Text},
 	}
 
-	g.SendEmail(ctx, mail)
-
-	return "OKAY", nil
+	return g.SendEmail(ctx, mail)
 }
 
 func (g *gatewayApi) SendEmail(ctx context.Context, payload Mail) (data interface{}, err error) {
-	url := g.FabdBaseUrl + "/v4/notification-service/notifications/mailer"
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Payload: %s", string(jsonData))
+	url := g.FabdBaseUrl + "/v4/webhooks/email-notifications"
+	form := &bytes.Buffer{}
+	writer := multipart.NewWriter(form)
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	for _, recipient := range payload.To {
+		_ = writer.WriteField("to", recipient)
+	}
+	for _, cc := range payload.CC {
+		_ = writer.WriteField("cc", cc)
+	}
+	for _, bcc := range payload.BCC {
+		_ = writer.WriteField("bcc", bcc)
+	}
+	_ = writer.WriteField("subject", payload.Subject)
+	_ = writer.WriteField("template_code", payload.TemplateCode)
+	dataJson, _ := json.Marshal(payload.Data)
+	_ = writer.WriteField("data", string(dataJson))
+
+	if len(payload.Attachments) > 0 {
+		for _, attachment := range payload.Attachments {
+			file, err := os.Open(attachment.Path)
+			if err != nil {
+				return nil, err
+			}
+			defer file.Close()
+
+			part, err := writer.CreateFormFile("attachments", attachment.FileName)
+			if err != nil {
+				return nil, err
+			}
+			_, err = io.Copy(part, file)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	err = writer.Close()
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("x-api-key", g.ApiKey)
-	req.Header.Set("Content-Type", "application/json")
+
+	req, err := http.NewRequest(http.MethodPost, url, form)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", g.ApiKey)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

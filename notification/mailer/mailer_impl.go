@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"mime"
 	"net/smtp"
 	"path/filepath"
 	"strings"
@@ -44,11 +43,11 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 		log.Printf("readFiles %v", time.Since(start))
 	}()
 
-	attachments := make([]Attachments, len(filePaths))
+	attachments := make([]Attachment, len(filePaths))
 
 	type result struct {
 		index      int
-		attachment Attachments
+		attachment Attachment
 		err        error
 	}
 
@@ -59,22 +58,11 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 		wg.Add(1)
 		go func(i int, filePath string) {
 			defer wg.Done()
-			fileContent, err := ioutil.ReadFile(filePath)
-			if err != nil {
-				results <- result{i, Attachments{}, err}
-				return
-			}
-
 			fileName := filepath.Base(filePath)
-			contentType := mime.TypeByExtension(filepath.Ext(fileName))
-
-			attachment := Attachments{
-				FileName:    fileName,
-				Content:     fileContent,
-				Encoding:    "base64", // Assuming base64 encoding
-				ContentType: contentType,
+			attachment := Attachment{
+				FileName: fileName,
+				Path:     filePath,
 			}
-
 			results <- result{i, attachment, nil}
 		}(i, filePath)
 	}
@@ -92,15 +80,13 @@ func (g *gateway) SendEmailWithFilePaths(ctx context.Context, mailWithoutAttachm
 	}
 
 	mail := Mail{
-		To:          mailWithoutAttachments.To,
-		Subject:     mailWithoutAttachments.Subject,
-		Message:     mailWithoutAttachments.Message,
-		Attachments: attachments,
+		To:           mailWithoutAttachments.To,
+		Subject:      mailWithoutAttachments.Subject,
+		TemplateCode: mailWithoutAttachments.Message,
+		Data:         map[string]interface{}{"text": mailWithoutAttachments.Text},
 	}
 
-	g.SendEmail(ctx, mail)
-
-	return "OKAY", nil
+	return g.SendEmail(ctx, mail)
 }
 
 func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, err error) {
@@ -127,7 +113,7 @@ func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, e
 		`Content-Type: text/html; charset="UTF-8"` + "\r\n" +
 		"Content-Transfer-Encoding: 7bit\r\n" +
 		"\r\n" +
-		mail.Message +
+		mail.TemplateCode +
 		"\r\n"
 
 	type result struct {
@@ -140,14 +126,19 @@ func (g *gateway) SendEmail(ctx context.Context, mail Mail) (data interface{}, e
 
 	for _, attachment := range mail.Attachments {
 		wg.Add(1)
-		go func(attachment Attachments) {
+		go func(attachment Attachment) {
 			defer wg.Done()
+			fileContent, err := ioutil.ReadFile(attachment.Path)
+			if err != nil {
+				results <- result{"", err}
+				return
+			}
 			encodedAttachment := "--MULTIPART_BOUNDARY\r\n" +
 				`Content-Type: application/octet-stream` + "\r\n" +
 				`Content-Transfer-Encoding: base64` + "\r\n" +
 				`Content-Disposition: attachment; filename="` + attachment.FileName + `"` + "\r\n" +
 				"\r\n" +
-				base64.StdEncoding.EncodeToString(attachment.Content) +
+				base64.StdEncoding.EncodeToString(fileContent) +
 				"\r\n"
 			results <- result{encodedAttachment, nil}
 		}(attachment)
