@@ -83,7 +83,10 @@ import (
 func main() {
 
     // Initialize the notification handler
-    notifHandler := bell.NewNotifBellHandler()
+    notifHandler, err := bell.NewNotifBellApiHandler()
+    if err != nil {
+        log.Fatalf("Failed to initialize notification gateway: %v", err)
+    }
 
 ```
 
@@ -95,21 +98,23 @@ To send a single notification, use the SendBell method:
 
 ```sh
 payload := bell.NotificationPayload{
-    UserID:  "123",
-    Type:    "info",
-    Name:    "John Doe",
-    Email:   "john.doe@example.com",
-    Phone:   "1234567890",
-    Icon:    "icon.png",
-    Path:    "/path/to/resource",
-    Content: map[string]interface{}{"message": "Hello, World!"},
-    Color:   "primary",
+    UserID:      "123",
+    Type:        "info",
+    Icon:        "icon.png",
+    Path:        "/path/to/resource",
+    Content:     map[string]interface{}{"message": "Hello, World!"},
+    Color:       "primary",
+    MsgType:     "alert",
+    Channel:     "email",
+    EcosystemID: "ecosystem_123",
 }
 
 err := notifHandler.SendBell(ctx, payload)
 if err != nil {
     log.Fatal(err)
 }
+
+log.Println("Single notification sent successfully")
 ```
 
 Send Broadcast Notifications
@@ -117,22 +122,31 @@ Send Broadcast Notifications
 To send broadcast notifications to multiple users, use the SendBellBroadcast method:
 ```sh
 userIdentifiers := []bell.UserIdentifier{
-    {UserID: "123", Name: "John Doe", Email: "john.doe@example.com", Phone: "1234567890"},
-    {UserID: "456", Name: "Jane Smith", Email: "jane.smith@example.com", Phone: "0987654321"},
+    {
+        UserID: "123",
+    },
+    {
+        UserID: "456",
+    },
 }
 
 broadcastPayload := bell.NotificationPayloadBroadcast{
-    Type:    "info",
-    Icon:    "icon.png",
-    Path:    "/path/to/resource",
-    Content: map[string]interface{}{"message": "Hello, Everyone!"},
-    Color:   "primary",
+    Type:        "info",
+    Icon:        "icon.png",
+    Path:        "/path/to/resource",
+    Content:     map[string]interface{}{"message": "Hello, Everyone!"},
+    Color:       "primary",
+    MsgType:     "alert",
+    Channel:     "email",
+    EcosystemID: "ecosystem_123",
 }
 
 err := notifHandler.SendBellBroadcast(ctx, userIdentifiers, broadcastPayload)
 if err != nil {
     log.Fatal(err)
 }
+
+log.Println("Broadcast notifications sent successfully")
 ```
 
 # notif Mailer
@@ -163,8 +177,10 @@ import (
 func main() {
 
     // Initialize the Mailer handler
-    mailerHandler := mailer.NewMailerHandler()
-    
+    mailerHandler, err := mailer.NewMailerHandler()
+    if err != nil {
+	log.Fatalf("Failed to initialize mailer gateway: %v", err)
+	}
 }
 ```
 
@@ -175,22 +191,26 @@ Send Emails
 To send a notification, use the SendEmail method
 
 ```sh
-to := []string{"recipient1@example.com", "recipient2@example.com"}
-subject := "Test Subject"
-message := "This is a test email with attachments."
+emailPayload := mailer.Mail{
+		To:           []string{"example@gmail.com", "example2@gmail.com"},
+		CC:           []string{"example@gmail.com"},
+		BCC:          []string{"example@gmail.com"},
+		Subject:      "Test Subject",
+		TemplateCode: "test_template_code",
+		Data:         map[string]interface{}{"otp_code": "123456"},
+		Attachments: []mailer.Attachment{
+			{
+				FileName: "test.txt",
+				Path:     "./test.txt",
+			},
+		},
+	}
 
- mail := mailer.Mail{
-  	To:      emailRecipients,
-  	Subject: emailSubject,
-  	Message: emailMessage,
-  }
-
-response, err := mailerHandler.SendEmail(context.Background(), mail)
+response, err := emailHandler.SendEmail(ctx, emailPayload)
 if err != nil {
-    log.Fatal(err)
+	log.Fatalf("Error sending email: %v", err)
 }
-
-log.Println("Response:", response)
+log.Printf("Email sent successfully: %v", response)
 ```
 
 # notif OCA
@@ -221,7 +241,7 @@ import (
 func main() {
 
     // Initialize the OCA handler
-    ocaHandler := oca.NewOCAHandler()
+    ocaHandler, err := oca.NewOCAHandler()
 
 }
 ```
@@ -238,7 +258,7 @@ body := oca.OCA{
     MessageData: oca.Message{
 			Type: "template",
 			Template: oca.Template{
-				TemplateCodeID: os.Getenv("OCA_WA_TEMPLATE_CODE"),
+				TemplateCodeID: os.Getenv("NOTIF_OCA_WA_TEMPLATE_CODE"),
 				Payload: []oca.Payload{
 					{
 						Position: "body",
