@@ -130,15 +130,17 @@ userIdentifiers := []bell.UserIdentifier{
     },
 }
 
-broadcastPayload := bell.NotificationPayloadBroadcast{
-    Type:        "info",
-    Icon:        "icon.png",
-    Path:        "/path/to/resource",
-    Content:     map[string]interface{}{"message": "Hello, Everyone!"},
-    Color:       "primary",
-    MsgType:     "alert",
-    Channel:     "email",
-    EcosystemID: "ecosystem_123",
+broadcastPayload := []bell.NotificationPayloadBroadcast{
+	{
+		Type:        "info-go",
+		Icon:        "icon.png",
+		Path:        "/path/to/resource",
+		Content:     map[string]interface{}{"message": "Hello, World!"},
+		Color:       "blue",
+		MsgType:     "dm",
+		Channel:     "test",
+		EcosystemID: "00000000-0000-0000-0000-000000000001",
+	},
 }
 
 err := notifHandler.SendBellBroadcast(ctx, userIdentifiers, broadcastPayload)
