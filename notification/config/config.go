@@ -26,8 +26,6 @@ const (
 	OCAWABASEURL = EnvPrefix + "OCA_WA_BASE_URL"
 	OCAWAToken   = EnvPrefix + "OCA_WA_TOKEN"
 
-	BellAPIKEY = EnvPrefix + "BELL_API_KEY"
-
 	FabdBaseUrl = EnvPrefix + "FABD_BASE_URL"
 	ApiKey      = EnvPrefix + "API_KEY"
 )
@@ -52,8 +50,8 @@ type OCAConfig struct {
 }
 
 type BellConfig struct {
-	FabdBaseUrl string `json:"fabd_base_url" validate:"required"`
-	BellApiKey  string `json:"api_key" validate:"required"`
+	FabdBaseUrl string `json:"notif_fabd_base_url" validate:"required"`
+	ApiKey      string `json:"notif_api_key" validate:"required"`
 }
 
 type ApiConfig struct {
@@ -93,7 +91,7 @@ func InitEnv(configName string) (Config, error) {
 	case BELL:
 		bellConfig := BellConfig{
 			FabdBaseUrl: getEnv(FabdBaseUrl),
-			BellApiKey:  getEnv(BellAPIKEY),
+			ApiKey:      getEnv(ApiKey),
 		}
 		if err := validateEnv(&bellConfig); err != nil {
 			log.Printf("Bell configuration is not valid: %v", err)

@@ -81,7 +81,7 @@ func (g *gatewayApi) SendBell(ctx context.Context, payload NotificationPayload) 
 	return nil
 }
 
-func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
+func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payloads []NotificationPayloadBroadcast) error {
 	start := time.Now()
 	defer func() {
 		log.Printf("sendNotif took %v", time.Since(start))
@@ -90,62 +90,75 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(userIdentifiers))
 
-	notificationPayloads := []NotificationPayload{}
-
-	var mu sync.Mutex
+	notificationPayloads := make(chan NotificationPayload, len(userIdentifiers)*len(payloads))
 
 	if len(userIdentifiers) > 0 {
 		for _, user := range userIdentifiers {
-			wg.Add(1)
-			go func(user UserIdentifier) {
-				defer wg.Done()
+			for _, payload := range payloads {
+				wg.Add(1)
+				go func(user UserIdentifier, payload NotificationPayloadBroadcast) {
+					defer wg.Done()
 
-				notificationPayload := NotificationPayload{
-					UserID:      user.UserID,
-					Type:        payload.Type,
-					Icon:        payload.Icon,
-					Path:        payload.Path,
-					Content:     payload.Content,
-					Color:       payload.Color,
-					IsRead:      payload.IsRead,
-					MsgType:     payload.MsgType,
-					Channel:     payload.Channel,
-					EcosystemID: payload.EcosystemID,
-				}
+					notificationPayload := NotificationPayload{
+						UserID:      user.UserID,
+						Type:        payload.Type,
+						Icon:        payload.Icon,
+						Path:        payload.Path,
+						Content:     payload.Content,
+						Color:       payload.Color,
+						IsRead:      payload.IsRead,
+						MsgType:     payload.MsgType,
+						Channel:     payload.Channel,
+						EcosystemID: payload.EcosystemID,
+					}
 
-				if err := validatePayload(notificationPayload); err != nil {
-					return
-				}
+					if err := validatePayload(notificationPayload); err != nil {
+						log.Printf("Validation error for user %s: %v", user.UserID, err)
+						return
+					}
 
-				mu.Lock()
-				notificationPayloads = append(notificationPayloads, notificationPayload)
-				mu.Unlock()
-
-			}(user)
+					notificationPayloads <- notificationPayload
+				}(user, payload)
+			}
 		}
-		wg.Wait()
 	} else {
-		notificationPayloads = append(notificationPayloads, NotificationPayload{
-			UserID:      payload.UserID,
-			Type:        payload.Type,
-			Icon:        payload.Icon,
-			Path:        payload.Path,
-			Content:     payload.Content,
-			Color:       payload.Color,
-			IsRead:      payload.IsRead,
-			MsgType:     payload.MsgType,
-			Channel:     payload.Channel,
-			EcosystemID: payload.EcosystemID,
-		})
+		for _, payload := range payloads {
+			notificationPayloads <- NotificationPayload{
+				UserID:      "",
+				Type:        payload.Type,
+				Icon:        payload.Icon,
+				Path:        payload.Path,
+				Content:     payload.Content,
+				Color:       payload.Color,
+				IsRead:      payload.IsRead,
+				MsgType:     payload.MsgType,
+				Channel:     payload.Channel,
+				EcosystemID: payload.EcosystemID,
+			}
+		}
 	}
 
-	if err := g.pushNotifBulk(notificationPayloads); err != nil {
+	go func() {
+		wg.Wait()
+		close(notificationPayloads)
+	}()
+
+	var payloadList []NotificationPayload
+	for payload := range notificationPayloads {
+		payloadList = append(payloadList, payload)
+	}
+
+	log.Printf("Prepared %d notification payloads", len(payloadList))
+
+	pushStart := time.Now()
+	if err := g.pushNotifBulk(payloadList); err != nil {
 		log.Printf("Error sending notifications: %v", err)
 		select {
 		case errChan <- fmt.Errorf("failed to send broadcast notifications"):
 		default:
 		}
 	}
+	log.Printf("pushNotifBulk took %v", time.Since(pushStart))
 
 	close(errChan)
 
