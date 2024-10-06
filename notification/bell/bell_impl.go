@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -84,10 +83,6 @@ func (g *gateway) SendBell(ctx context.Context, payload NotificationPayload) err
 }
 
 func (g *gateway) SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
-	if len(userIdentifiers) == 0 {
-		return errors.New("user identifiers array is empty")
-	}
-
 	start := time.Now()
 	defer func() {
 		log.Printf("sendNotif took %v", time.Since(start))
@@ -96,41 +91,64 @@ func (g *gateway) SendBellBroadcast(ctx context.Context, userIdentifiers []UserI
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(userIdentifiers))
 
-	for _, user := range userIdentifiers {
-		wg.Add(1)
-		go func(user UserIdentifier) {
-			defer wg.Done()
+	notificationPayloads := []NotificationPayload{}
 
-			notificationPayload := NotificationPayload{
-				UserID:  user.UserID,
-				Type:    payload.Type,
-				Name:    user.Name,
-				Email:   user.Email,
-				Phone:   user.Phone,
-				Icon:    payload.Icon,
-				Path:    payload.Path,
-				Content: payload.Content,
-				Color:   payload.Color,
-			}
+	var mu sync.Mutex
 
-			if err := validatePayload(notificationPayload); err != nil {
-				return
-			}
+	if len(userIdentifiers) > 0 {
+		for _, user := range userIdentifiers {
+			wg.Add(1)
+			go func(user UserIdentifier) {
+				defer wg.Done()
 
-			if err := g.pushNotif(notificationPayload); err != nil {
-				log.Printf("Error sending notification to user %s: %v", user.UserID, err)
-				select {
-				case errChan <- fmt.Errorf("failed to send broadcast notifications to user %s", user.UserID):
-				default:
+				notificationPayload := NotificationPayload{
+					UserID:      user.UserID,
+					Type:        payload.Type,
+					Icon:        payload.Icon,
+					Path:        payload.Path,
+					Content:     payload.Content,
+					Color:       payload.Color,
+					IsRead:      payload.IsRead,
+					MsgType:     payload.MsgType,
+					Channel:     payload.Channel,
+					EcosystemID: payload.EcosystemID,
 				}
-			}
-		}(user)
+
+				if err := validatePayload(notificationPayload); err != nil {
+					return
+				}
+
+				mu.Lock()
+				notificationPayloads = append(notificationPayloads, notificationPayload)
+				mu.Unlock()
+
+			}(user)
+		}
+		wg.Wait()
+	} else {
+		notificationPayloads = append(notificationPayloads, NotificationPayload{
+			UserID:      payload.UserID,
+			Type:        payload.Type,
+			Icon:        payload.Icon,
+			Path:        payload.Path,
+			Content:     payload.Content,
+			Color:       payload.Color,
+			IsRead:      payload.IsRead,
+			MsgType:     payload.MsgType,
+			Channel:     payload.Channel,
+			EcosystemID: payload.EcosystemID,
+		})
 	}
 
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
+	if err := g.pushNotifBulk(notificationPayloads); err != nil {
+		log.Printf("Error sending notifications: %v", err)
+		select {
+		case errChan <- fmt.Errorf("failed to send broadcast notifications"):
+		default:
+		}
+	}
+
+	close(errChan)
 
 	for err := range errChan {
 		if err != nil {
@@ -160,6 +178,31 @@ func (g *gateway) pushNotif(payload NotificationPayload) error {
 		return err
 	}
 	defer resp.Body.Close()
+	log.Println("Response from external endpoint:", resp.Status)
+	return nil
+}
+
+func (g *gateway) pushNotifBulk(payload []NotificationPayload) error {
+	url := g.FabdBaseUrl + "/v4/webhooks/notifications-bulk"
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", g.ApiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
 	log.Println("Response from external endpoint:", resp.Status)
 	return nil
 }

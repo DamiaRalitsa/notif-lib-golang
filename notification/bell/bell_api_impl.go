@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -83,10 +82,6 @@ func (g *gatewayApi) SendBell(ctx context.Context, payload NotificationPayload) 
 }
 
 func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []UserIdentifier, payload NotificationPayloadBroadcast) error {
-	if len(userIdentifiers) == 0 {
-		return errors.New("user identifiers array is empty")
-	}
-
 	start := time.Now()
 	defer func() {
 		log.Printf("sendNotif took %v", time.Since(start))
@@ -99,35 +94,50 @@ func (g *gatewayApi) SendBellBroadcast(ctx context.Context, userIdentifiers []Us
 
 	var mu sync.Mutex
 
-	for _, user := range userIdentifiers {
-		wg.Add(1)
-		go func(user UserIdentifier) {
-			defer wg.Done()
+	if len(userIdentifiers) > 0 {
+		for _, user := range userIdentifiers {
+			wg.Add(1)
+			go func(user UserIdentifier) {
+				defer wg.Done()
 
-			notificationPayload := NotificationPayload{
-				UserID:  user.UserID,
-				Type:    payload.Type,
-				Name:    user.Name,
-				Email:   user.Email,
-				Phone:   user.Phone,
-				Icon:    payload.Icon,
-				Path:    payload.Path,
-				Content: payload.Content,
-				Color:   payload.Color,
-			}
+				notificationPayload := NotificationPayload{
+					UserID:      user.UserID,
+					Type:        payload.Type,
+					Icon:        payload.Icon,
+					Path:        payload.Path,
+					Content:     payload.Content,
+					Color:       payload.Color,
+					IsRead:      payload.IsRead,
+					MsgType:     payload.MsgType,
+					Channel:     payload.Channel,
+					EcosystemID: payload.EcosystemID,
+				}
 
-			if err := validatePayload(notificationPayload); err != nil {
-				return
-			}
+				if err := validatePayload(notificationPayload); err != nil {
+					return
+				}
 
-			mu.Lock()
-			notificationPayloads = append(notificationPayloads, notificationPayload)
-			mu.Unlock()
+				mu.Lock()
+				notificationPayloads = append(notificationPayloads, notificationPayload)
+				mu.Unlock()
 
-		}(user)
+			}(user)
+		}
+		wg.Wait()
+	} else {
+		notificationPayloads = append(notificationPayloads, NotificationPayload{
+			UserID:      payload.UserID,
+			Type:        payload.Type,
+			Icon:        payload.Icon,
+			Path:        payload.Path,
+			Content:     payload.Content,
+			Color:       payload.Color,
+			IsRead:      payload.IsRead,
+			MsgType:     payload.MsgType,
+			Channel:     payload.Channel,
+			EcosystemID: payload.EcosystemID,
+		})
 	}
-
-	wg.Wait()
 
 	if err := g.pushNotifBulk(notificationPayloads); err != nil {
 		log.Printf("Error sending notifications: %v", err)
